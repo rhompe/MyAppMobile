@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mychatme/l10n/app_localizations.dart';
 
 class ChatScreen extends StatefulWidget {
   final String currentUserId;
@@ -57,10 +58,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final chatId = getChatId();//added
 
     return Scaffold(
-      appBar: AppBar(title: Text("Chat con ${widget.receiverName}")),
+      //appBar: AppBar(title: Text("Chat con ${widget.receiverName}")),
+      appBar: AppBar(title: Text(t.chatWith(widget.receiverName))),
       body: Column(
         children: [
           Expanded(
@@ -79,7 +82,8 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (context, snapshot) {
                 //added
                 if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
+                  //return Center(child: Text("Error: ${snapshot.error}"));
+                  return Center(child: Text("${t.error}: ${snapshot.error}"));
                 }//added
 
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
@@ -88,7 +92,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 //added
                  if (messages.isEmpty) {
-                  return const Center(child: Text("No hay mensajes aún."));
+                  //return const Center(child: Text("No hay mensajes aún."));
+                  return Center(child: Text(t.noMessagesYet));
                 }//added
 
                 return ListView.builder(
@@ -122,8 +127,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: "Escribe un mensaje...",
+                    decoration:  InputDecoration(
+                      //hintText: "Escribe un mensaje...",
+                      hintText: t.typeMessage,
                       border: OutlineInputBorder(),
                     ),
                   ),

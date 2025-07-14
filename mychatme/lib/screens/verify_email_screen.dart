@@ -1,43 +1,47 @@
 // lib/screens/verify_email_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mychatme/l10n/app_localizations.dart';
 
 class VerifyEmailScreen extends StatelessWidget {
   const VerifyEmailScreen({super.key});
 
   void _checkVerification(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     await FirebaseAuth.instance.currentUser?.reload();
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null && user.emailVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Correo verificado correctamente')),
+        SnackBar(content: Text(t.emailVerifiedSuccessfully)),
       );
 
       // Aquí puedes redirigir a la pantalla principal o de login
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Correo no verificado aún')),
+        SnackBar(content: Text(t.emailNotVerifiedYet)),
       );
     }
   }
 
   void _resendVerificationEmail(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
     try {
       await FirebaseAuth.instance.currentUser?.sendEmailVerification();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Correo de verificación reenviado')),
+        SnackBar(content: Text(t.verificationEmailResent)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al reenviar: $e')),
+        SnackBar(content: Text("${t.errorResending}: $e")),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: Center(
@@ -63,20 +67,20 @@ class VerifyEmailScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.email_outlined, size: 60, color: Colors.green),
                 const SizedBox(height: 16),
-                const Text(
-                  "Verifica tu correo electrónico",
+                Text(
+                  t.verifyYourEmail,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  "Hemos enviado un enlace de verificación a tu correo.",
+                Text(
+                  t.verificationEmailSentToYou,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => _checkVerification(context),
-                  child: const Text("Ya verifiqué (Demo)"),
+                  child: Text(t.alreadyVerifiedDemo),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
                     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
@@ -84,7 +88,7 @@ class VerifyEmailScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () => _resendVerificationEmail(context),
-                  child: const Text("Reenviar correo"),
+                  child: Text(t.resendEmail),
                 )
               ],
             ),

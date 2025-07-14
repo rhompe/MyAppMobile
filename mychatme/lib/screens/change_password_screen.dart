@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mychatme/l10n/app_localizations.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -55,24 +56,31 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Cambiar contraseña"),
+        //title:  Text("Cambiar contraseña"),
+        title: Text(t.changePassword),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            const Text(
+            /*const Text(
               "Ingresa y confirma tu nueva contraseña:",
               style: TextStyle(fontSize: 16),
+            ),*/
+            Text(
+              t.enterAndConfirmNewPassword,
+              style: TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 16),
+                  const SizedBox(height: 16),
             TextField(
               controller: _newPasswordController,
               obscureText: !showNewPassword,
               decoration: InputDecoration(
-                labelText: "Nueva contraseña",
+                //labelText: "Nueva contraseña",
+                labelText: t.newPassword,
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(showNewPassword ? Icons.visibility_off : Icons.visibility),
@@ -86,7 +94,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               controller: _confirmPasswordController,
               obscureText: !showConfirmPassword,
               decoration: InputDecoration(
-                labelText: "Confirmar nueva contraseña",
+                //labelText: "Confirmar nueva contraseña",
+                labelText: t.confirmNewPassword,
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(showConfirmPassword ? Icons.visibility_off : Icons.visibility),
@@ -103,7 +112,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
-              child: const Text("Cambiar contraseña"),
+              //child: const Text("Cambiar contraseña"),
+              child: Text(t.changePassword),
             ),
           ],
         ),

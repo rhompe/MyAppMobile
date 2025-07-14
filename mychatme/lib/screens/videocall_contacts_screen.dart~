@@ -1,0 +1,60 @@
+// lib/screens/videocall_contacts_screen.dart
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mychatme/screens/videocall_screen.dart';
+
+class VideoCallContactsScreen extends StatelessWidget {
+  const VideoCallContactsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Seleccionar contacto para videollamada'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestore.collection('users').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final currentUserId = _auth.currentUser?.uid;
+          final users = snapshot.data!.docs.where((doc) => doc.id != currentUserId).toList();
+
+          return ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              final userData = user.data() as Map<String, dynamic>;
+
+              return ListTile(
+                leading: CircleAvatar(
+                  child: Text(userData['name']?[0] ?? '?'),
+                ),
+                title: Text(userData['name'] ?? 'Usuario sin nombre'),
+                subtitle: Text(userData['email'] ?? ''),
+                trailing: IconButton(
+                  icon: const Icon(Icons.video_call, color: Colors.green),
+                  onPressed: () {
+                    // Navegar a la pantalla de videollamada
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const VideoCallScreen(),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}

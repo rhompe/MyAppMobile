@@ -5,7 +5,7 @@ import 'package:mychatme/screens/register_screen.dart';
 import 'package:mychatme/services/auth_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mychatme/screens/forgot_password_screen.dart';
-
+import 'package:mychatme/l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,9 +19,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+
   void handleLogin() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
+     final t = AppLocalizations.of(context)!;
 
     try {
       UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -35,28 +37,41 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => HomeScreen(
-            userName: userCredential.user?.email ?? 'Usuario',
+            //userName: userCredential.user?.email ?? 'Usuario',
+            userName: userCredential.user?.email ?? t.user,
             userRole: 'user', // O administra el rol 
           ),
         ),
       );
     } on FirebaseAuthException catch (e) {
-      String message = "Error en la autenticación";
+      /*String message = "Error en la autenticación";
       if (e.code == 'user-not-found') {
         message = "No existe usuario con ese correo.";
       } else if (e.code == 'wrong-password') {
         message = "Contraseña incorrecta.";
+      }*/
+      String message = t.authenticationError;
+      if (e.code == 'user-not-found') {
+        message = t.userNotFound;
+      } else if (e.code == 'wrong-password') {
+        message = t.wrongPassword;
+      } else if (e.code == 'invalid-email') {
+        message = t.invalidEmail;
+      } else if (e.code == 'user-disabled') {
+        message = t.userDisabled;
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
   void handleGoogleSignIn() async {
+     final t = AppLocalizations.of(context)!;
     final userCredential = await AuthService().signInWithGoogle();
   
     if (userCredential != null) {
       final user = userCredential.user!;
-      final name = user.displayName ?? "Usuario Google";
+      //final name = user.displayName ?? "Usuario Google";
+      final name = user.displayName ?? t.googleUser;
       final role = "user"; //roles
 
       Navigator.pushReplacement(
@@ -70,17 +85,21 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Inicio de sesión con Google fallido")),
+        //const SnackBar(content: Text("Inicio de sesión con Google fallido")),
+        SnackBar(content: Text(t.googleSignInFailed)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(onPressed: () => Navigator.pop(context)),
-        title: const Text("Iniciar Sesión"),
+        //title: const Text("Iniciar Sesión"),
+        title: Text(t.login),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -90,8 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              "Ingresa a tu cuenta",
+            Text(
+              t.enterYourAccount, // o la clave que prefieras
               style: TextStyle(fontSize: 18),
               textAlign: TextAlign.center,
             ),
@@ -106,7 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 24,
                 width: 24,
               ),
-              label: const Text("Iniciar con Google"),
+              //label: const Text("Iniciar con Google"),
+              label: Text(t.signInWithGoogle),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
@@ -121,8 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
             // Email
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "Correo electrónico",
+              decoration:  InputDecoration(
+                //labelText: "Correo electrónico",
+                labelText: t.email,
                 prefixIcon: Icon(Icons.mail),
                 border: OutlineInputBorder(),
               ),
@@ -136,7 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _passwordController,
               obscureText: !showPassword,
               decoration: InputDecoration(
-                labelText: "Contraseña",
+                //labelText: "Contraseña",
+                labelText: t.password,
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -158,7 +180,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                 );
               },
-              child: const Text("¿Olvidaste tu contraseña?"),
+              //child: const Text("¿Olvidaste tu contraseña?"),
+              child: Text(t.forgotPassword),
             ),
 
             const SizedBox(height: 16),
@@ -170,7 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: const Color.fromARGB(255, 169, 117, 179),
               ),
-              child: const Text("Iniciar sesión"),
+              //child: const Text("Iniciar sesión"),
+              child: Text(t.signIn),
             ),
 
             const SizedBox(height: 24),
@@ -179,7 +203,8 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("¿No tienes una cuenta?"),
+                //const Text("¿No tienes una cuenta?"),
+                Text(t.dontHaveAccount),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -189,7 +214,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     );
                   },
-                  child: const Text("Regístrate"),
+                  //child: const Text("Regístrate"),
+                  child: Text(t.signUp),
                 ),
               ],
             )

@@ -3,7 +3,7 @@ import 'package:mychatme/screens/home_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mychatme/screens/verify_email_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:mychatme/l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -40,13 +40,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }*/
   //Autenticacion cuenta
    void handleRegister() async {
+    final t = AppLocalizations.of(context)!;
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Las contraseñas no coinciden')),
+        SnackBar(content: Text(t.passwordsDontMatch)),
       );
       return;
     }
@@ -69,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Correo de verificación enviado')),
+        SnackBar(content: Text(t.verificationEmailSent)),
       );
 
       // Navegar a pantalla para verificar email
@@ -79,9 +80,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
     } on FirebaseAuthException catch (e) {
-      String message = "Error al registrar usuario";
+      String message = t.errorRegisteringUser;
       if (e.code == 'email-already-in-use') {
-        message = "El correo ya está en uso";
+        message = t.emailAlreadyInUse;
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
@@ -91,10 +92,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(onPressed: () => Navigator.pop(context)),
-        title: const Text("Crear cuenta"),
+        title: Text(t.createAccount),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -105,8 +107,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              const Text(
-                "Crea tu cuenta nueva",
+              Text(
+                t.createYourNewAccount,
                 style: TextStyle(fontSize: 18),
                 textAlign: TextAlign.center,
               ),
@@ -115,12 +117,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Nombre
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: "Nombre",
+                decoration: InputDecoration(
+                  labelText: t.name,
                   prefixIcon: Icon(Icons.person),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value!.isEmpty ? "Campo requerido" : null,
+                validator: (value) => value!.isEmpty ? t.requiredField : null,
               ),
 
               const SizedBox(height: 16),
@@ -128,12 +130,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Correo
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: "Correo electrónico",
+                decoration: InputDecoration(
+                  labelText: t.email,
                   prefixIcon: Icon(Icons.email),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value!.isEmpty ? "Campo requerido" : null,
+                validator: (value) => value!.isEmpty ? t.requiredField : null,
               ),
 
               const SizedBox(height: 16),
@@ -143,7 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _passwordController,
                 obscureText: !showPassword,
                 decoration: InputDecoration(
-                  labelText: "Contraseña",
+                  labelText: t.password,
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -153,7 +155,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   border: const OutlineInputBorder(),
                 ),
-                validator: (value) => value!.length < 6 ? "Mínimo 6 caracteres" : null,
+                validator: (value) => value!.length < 6 ? t.minimumSixCharacters : null,
               ),
 
               const SizedBox(height: 16),
@@ -163,7 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _confirmPasswordController,
                 obscureText: !showConfirmPassword,
                 decoration: InputDecoration(
-                  labelText: "Confirmar contraseña",
+                  labelText: t.confirmPassword,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -174,7 +176,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   border: const OutlineInputBorder(),
                 ),
                 validator: (value) => value != _passwordController.text
-                    ? "Las contraseñas no coinciden"
+                    ? t.passwordsDontMatch
                     : null,
               ),
 
@@ -183,13 +185,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Rol
               DropdownButtonFormField<String>(
                 value: selectedRole,
-                items: const [
-                  DropdownMenuItem(value: "user", child: Text("Usuario")),
-                  DropdownMenuItem(value: "admin", child: Text("Administrador")),
+                items: [
+                  DropdownMenuItem(value: "user", child: Text(t.user)),
+                  DropdownMenuItem(value: "admin", child: Text(t.administrator)),
                 ],
                 onChanged: (value) => setState(() => selectedRole = value!),
-                decoration: const InputDecoration(
-                  labelText: "Rol",
+                decoration: InputDecoration(
+                  labelText: t.role,
                   prefixIcon: Icon(Icons.person_add),
                   border: OutlineInputBorder(),
                 ),
@@ -204,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color.fromARGB(255, 169, 117, 179),
                 ),
-                child: const Text("Crear cuenta"),
+                child: Text(t.createAccount),
               ),
             ],
           ),
