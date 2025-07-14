@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -32,18 +33,22 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
   bool _isConnecting = true;
   String? _errorMessage;
   bool _localUserJoined = false;
+  Timer? _timeoutTimer;
+  Timer? _waitingTimer;
+  int _waitingSeconds = 0;
+  bool _isWaitingForAnswer = false;
 
   // Tu configuración real de Agora
-  final String appId = '25a7c674122049319ac0b42da4b9541e'; 
-  // IMPORTANTE: Genera un nuevo token desde https://webdemo.agora.io/token-builder/
-  // O desde tu console de Agora
-  final String token = 'ACTUALIZA_ESTE_TOKEN_AQUI';
+  final String appId = '687f4d62e66f488da21b78026e07b150'; 
+  // Token RTC temporal para el canal 'pruebapia2'
+  final String token = '007eJxTYJBoa7qmuyFr//5Pda5blLnaGlaaTuAXDhKbtM4gMY/JIFqBwczCPM0kxcwo1cwszcTCIiXRyDDJ3MLAyCzVwDzJ0NRAZ1dJRkMgI8MhpSUsjAwQCOJzMRQUlaYmJRZkJhoxMAAAM0wegg==';
 
   @override
   void initState() {
     super.initState();
     _initAgora();
-    _listenToCallStatus(); // Nuevo: escuchar estado de la llamada
+    _listenToCallStatus();
+    _startTimeoutTimer(); // Iniciar timer de timeout
   }
 
   /// Configuraciones adicionales después de unirse al canal
@@ -74,6 +79,7 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
         switch (status) {
           case 'accepted':
             print('🎉 ¡Llamada aceptada! Ambos usuarios deberían conectarse ahora');
+            _stopWaitingTimer(); // Detener timer de espera
             break;
           case 'rejected':
             _showSnackBar('Llamada rechazada');
@@ -86,6 +92,72 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
         }
       }
     });
+  }
+
+  /// Iniciar timer de timeout para llamadas sin respuesta
+  void _startTimeoutTimer() {
+    // Timer de timeout principal (60 segundos)
+    _timeoutTimer = Timer(const Duration(seconds: 60), () {
+      if (mounted && _remoteUid == null) {
+        print('⏰ Timeout: No hay respuesta después de 60 segundos');
+        _handleCallTimeout();
+      }
+    });
+
+    // Timer de contador para mostrar tiempo de espera
+    _waitingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _waitingSeconds++;
+        });
+        
+        // Mostrar estados diferentes según el tiempo
+        if (_waitingSeconds == 30) {
+          _showSnackBar('Aún esperando respuesta...');
+        } else if (_waitingSeconds == 45) {
+          _showSnackBar('La llamada terminará pronto sin respuesta');
+        }
+      }
+    });
+    
+    // Marcar que estamos esperando respuesta si no es llamada entrante
+    if (!widget.isIncoming) {
+      setState(() {
+        _isWaitingForAnswer = true;
+      });
+    }
+  }
+
+  /// Detener timer de espera cuando se acepta la llamada
+  void _stopWaitingTimer() {
+    _timeoutTimer?.cancel();
+    _waitingTimer?.cancel();
+    setState(() {
+      _isWaitingForAnswer = false;
+    });
+  }
+
+  /// Manejar timeout de llamada
+  void _handleCallTimeout() {
+    _stopWaitingTimer();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('⏰ Sin respuesta'),
+        content: Text('${widget.receiverName} no contestó la llamada.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Cerrar diálogo
+              _endCall(); // Terminar llamada
+            },
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initAgora() async {
@@ -155,23 +227,28 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
       await _engine.startPreview();
       print('✅ Preview iniciado');
       
-      // ¡AQUÍ ES DONDE SE HACE LA CONEXIÓN REAL!
-      // Usar un canal simple y fijo para que ambos usuarios se encuentren
-      final channelName = 'testchannel'; // Canal fijo para pruebas
+      // Esperar un poco antes de unirse al canal
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Usar el canal fijo para el cual se generó el token
+      final channelName = 'pruebapia2'; // Canal fijo que coincide con el token
       
       print('🔗 Uniéndose al canal SIMPLE: $channelName');
       
+      // Usar el token real de Agora configurado arriba
+      final String testToken = token; // Token real de Agora
+      
       await _engine.joinChannel(
-        token: '', // Sin token para simplicidad
+        token: testToken,
         channelId: channelName,
         uid: 0,
-        options: const ChannelMediaOptions(
+        options: ChannelMediaOptions(
           channelProfile: ChannelProfileType.channelProfileCommunication,
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
         ),
       );
       
-      print('✅ Solicitud de unión enviada al canal: $channelName');
+      print('✅ JoinChannel ejecutado correctamente');
       
       // Configuraciones adicionales después de unirse
       await _engine.enableLocalVideo(true);
@@ -329,10 +406,16 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
       // Salir del canal de Agora
       await _engine.leaveChannel();
       
-      Navigator.pop(context);
+      // ARREGLADO: Solo cerrar la pantalla de videollamada, no toda la sesión
+      if (mounted) {
+        Navigator.pop(context); // Solo cierra esta pantalla
+      }
     } catch (e) {
       print('Error end call: $e');
-      Navigator.pop(context);
+      // ARREGLADO: Solo cerrar la pantalla, no toda la app
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -356,7 +439,7 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
                           renderMode: RenderModeType.renderModeHidden,
                         ),
                         connection: RtcConnection(
-                          channelId: 'testchannel', // Usar el mismo canal simple
+                          channelId: 'pruebapia2', // Usar el mismo canal del token
                         ),
                       ),
                     ),
@@ -478,10 +561,30 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Esperando a ${widget.receiverName}...',
+            _isWaitingForAnswer 
+                ? 'Llamando a ${widget.receiverName}...'
+                : 'Esperando a ${widget.receiverName}...',
             style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 16),
+          
+          // Contador de tiempo
+          if (_waitingSeconds > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: _waitingSeconds > 45 ? Colors.red.shade600 : Colors.orange.shade600,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _isWaitingForAnswer 
+                    ? 'Esperando respuesta: ${_waitingSeconds}s'
+                    : 'Tiempo conectado: ${_waitingSeconds}s',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          
           const SizedBox(height: 16),
           Text(
             'Canal: ${widget.callId}',
@@ -491,29 +594,53 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
           const SizedBox(height: 24),
           const CircularProgressIndicator(color: Colors.white),
           const SizedBox(height: 16),
+          
+          // Información de estado
           Container(
             padding: const EdgeInsets.all(12),
             margin: const EdgeInsets.symmetric(horizontal: 40),
             decoration: BoxDecoration(
-              color: Colors.blue.shade600,
+              color: _isWaitingForAnswer ? Colors.orange.shade600 : Colors.blue.shade600,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(Icons.info_outline, color: Colors.white, size: 20),
-                SizedBox(height: 4),
+                Icon(
+                  _isWaitingForAnswer ? Icons.access_time : Icons.info_outline, 
+                  color: Colors.white, 
+                  size: 20
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  'Videollamada Real Activa',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  _isWaitingForAnswer 
+                      ? 'Llamada Saliente'
+                      : 'Videollamada Real Activa',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 Text(
-                  'Esperando conexión del otro usuario',
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                  _isWaitingForAnswer 
+                      ? 'La llamada se cancelará en ${60 - _waitingSeconds}s si no contesta'
+                      : 'Esperando conexión del otro usuario',
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
+          
+          // Botón para cancelar llamada saliente
+          if (_isWaitingForAnswer && _waitingSeconds > 5)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: ElevatedButton(
+                onPressed: _endCall,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Cancelar llamada'),
+              ),
+            ),
         ],
       ),
     );
@@ -650,7 +777,29 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await _endCall();
+        // Preguntar antes de salir
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('¿Terminar videollamada?'),
+            content: const Text('¿Estás seguro de que quieres terminar la videollamada?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Terminar'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldExit == true) {
+          await _endCall();
+          return false; // Ya manejamos la navegación en _endCall
+        }
         return false;
       },
       child: Scaffold(
@@ -684,6 +833,8 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
 
   @override
   void dispose() {
+    _timeoutTimer?.cancel();
+    _waitingTimer?.cancel();
     _engine.leaveChannel();
     _engine.release();
     super.dispose();
