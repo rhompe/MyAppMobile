@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'videocall_screen.dart'; // Asegúrate de importar la pantalla de videollamada
+import 'videocall_real_screen.dart'; // Versión REAL con Agora
 import 'package:mychatme/l10n/app_localizations.dart';
 
 class VideoCallContactsScreen extends StatelessWidget {
@@ -54,12 +54,12 @@ class VideoCallContactsScreen extends StatelessWidget {
                 trailing: IconButton(
                   icon: const Icon(Icons.video_call, color: Colors.green),
                   onPressed: () {
-                    final callId = '${DateTime.now().millisecondsSinceEpoch}-${_auth.currentUser?.uid}-$receiverId';
+                    final callId = 'call-${DateTime.now().millisecondsSinceEpoch}';
 
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => VideoCallScreen(
+                        builder: (context) => VideoCallRealScreen(
                           callId: callId,
                           receiverId: receiverId,
                           receiverName: receiverName,

@@ -39,11 +39,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^3.15.1
   firebase_auth: ^5.6.2
-  google_sign_in: ^5.4.2
+  google_sign_in: ^6.1.5
   flutter_svg: ^2.0.7
   flutter_contacts: ^1.1.9+2
-  permission_handler: ^11.0.0
-  agora_rtc_engine: ^6.2.1
+  permission_handler: ^11.3.1
+  agora_rtc_engine: ^6.3.2
 
   http: ^0.13.5
   cloud_firestore: 5.6.11

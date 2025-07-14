@@ -142,6 +142,17 @@ class AppLocalizations {
   String get noContactsAvailable => _t('no_contacts_available');
   String get waitingForOtherParticipant => _t('waiting_for_other_participant');
   String get connectingToCall => _t('connecting_to_call');
+  String get endCall => _t('end_call');
+  String get muteAudio => _t('mute_audio');
+  String get unmuteAudio => _t('unmute_audio');
+  String get turnOffVideo => _t('turn_off_video');
+  String get turnOnVideo => _t('turn_on_video');
+  String get switchCamera => _t('switch_camera');
+  String get callEnded => _t('call_ended');
+  String get connectionFailed => _t('connection_failed');
+  String get permissionDenied => _t('permission_denied');
+  String get cameraPermissionRequired => _t('camera_permission_required');
+  String get microphonePermissionRequired => _t('microphone_permission_required');
 
   //Cambiar password
   String get enterAndConfirmNewPassword => _t('enter_and_confirm_new_password');
@@ -289,6 +300,17 @@ class AppLocalizations {
     'waiting_for_other_participant': 'Esperando al otro participante...',
     'connecting_to_call': 'Conectando a la llamada...',
     'video_call_with': 'Videollamada con', // texto base para concatenar
+    'end_call': 'Terminar llamada',
+    'mute_audio': 'Silenciar audio',
+    'unmute_audio': 'Activar audio',
+    'turn_off_video': 'Apagar video',
+    'turn_on_video': 'Encender video',
+    'switch_camera': 'Cambiar cámara',
+    'call_ended': 'Llamada terminada',
+    'connection_failed': 'Falló la conexión',
+    'permission_denied': 'Permiso denegado',
+    'camera_permission_required': 'Se requiere permiso de cámara',
+    'microphone_permission_required': 'Se requiere permiso de micrófono',
 
     //Pantalla ChangePassword
     'enter_and_confirm_new_password': 'Ingresa y confirma tu nueva contraseña',
@@ -434,6 +456,17 @@ class AppLocalizations {
     'waiting_for_other_participant': 'Waiting for the other participant...',
     'connecting_to_call': 'Connecting to call...',
     'video_call_with': 'Video call with', // base text to append name
+    'end_call': 'End call',
+    'mute_audio': 'Mute audio',
+    'unmute_audio': 'Unmute audio',
+    'turn_off_video': 'Turn off video',
+    'turn_on_video': 'Turn on video',
+    'switch_camera': 'Switch camera',
+    'call_ended': 'Call ended',
+    'connection_failed': 'Connection failed',
+    'permission_denied': 'Permission denied',
+    'camera_permission_required': 'Camera permission required',
+    'microphone_permission_required': 'Microphone permission required',
 
     // ChangePassword
     'enter_and_confirm_new_password': 'Enter and confirm your new password',
