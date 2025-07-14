@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mychatme/l10n/app_localizations.dart';
+import '../services/videocall_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class VideoCallRealScreen extends StatefulWidget {
   final String callId;
   final String receiverName;
   final String receiverId;
+  final bool isIncoming; // Nueva propiedad
 
   const VideoCallRealScreen({
     Key? key,
     required this.callId,
     required this.receiverName,
     required this.receiverId,
+    this.isIncoming = false, // Por defecto es llamada saliente
   }) : super(key: key);
 
   @override
@@ -31,12 +35,57 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
 
   // Tu configuración real de Agora
   final String appId = '25a7c674122049319ac0b42da4b9541e'; 
-  final String token = '007eJxTYLiu9fMY473pa6IrJ51w9TNyclZgPdJ5PK6xZKOL61EZRT4FBiPTRPNkM3MTQyMjAxNLY0PLxGSDJBOjlESTJEtTE8NUybKSjIZARoY4p5mMjAwQCOKzMRQUlaYmJTIwAAAIbh2i';
+  // IMPORTANTE: Genera un nuevo token desde https://webdemo.agora.io/token-builder/
+  // O desde tu console de Agora
+  final String token = 'ACTUALIZA_ESTE_TOKEN_AQUI';
 
   @override
   void initState() {
     super.initState();
     _initAgora();
+    _listenToCallStatus(); // Nuevo: escuchar estado de la llamada
+  }
+
+  /// Configuraciones adicionales después de unirse al canal
+  Future<void> _configureAfterJoin() async {
+    try {
+      // Forzar que el video y audio estén activos
+      await _engine.enableLocalVideo(true);
+      await _engine.enableLocalAudio(true);
+      
+      // Asegurar que el preview esté activo
+      await _engine.startPreview();
+      
+      print('✅ Configuración post-conexión completada');
+    } catch (e) {
+      print('⚠️ Error en configuración post-conexión: $e');
+    }
+  }
+
+  /// Escuchar el estado de la videollamada en Firestore
+  void _listenToCallStatus() {
+    VideoCallService.listenToCallStatus(widget.callId).listen((snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        final status = data['status'] as String;
+        
+        print('📊 Estado de llamada: $status');
+        
+        switch (status) {
+          case 'accepted':
+            print('🎉 ¡Llamada aceptada! Ambos usuarios deberían conectarse ahora');
+            break;
+          case 'rejected':
+            _showSnackBar('Llamada rechazada');
+            Navigator.pop(context);
+            break;
+          case 'ended':
+            _showSnackBar('Llamada terminada');
+            Navigator.pop(context);
+            break;
+        }
+      }
+    });
   }
 
   Future<void> _initAgora() async {
@@ -107,24 +156,28 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
       print('✅ Preview iniciado');
       
       // ¡AQUÍ ES DONDE SE HACE LA CONEXIÓN REAL!
-      // Usar el callId que viene del contacto seleccionado
-      final channelName = widget.callId; // Usar el ID real del chat
+      // Usar un canal simple y fijo para que ambos usuarios se encuentren
+      final channelName = 'testchannel'; // Canal fijo para pruebas
       
-      print('🔗 Uniéndose al canal REAL: $channelName');
+      print('🔗 Uniéndose al canal SIMPLE: $channelName');
       
       await _engine.joinChannel(
-        token: token,
+        token: '', // Sin token para simplicidad
         channelId: channelName,
         uid: 0,
         options: const ChannelMediaOptions(
           channelProfile: ChannelProfileType.channelProfileCommunication,
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
-          publishCameraTrack: true,
-          publishMicrophoneTrack: true,
         ),
       );
       
       print('✅ Solicitud de unión enviada al canal: $channelName');
+      
+      // Configuraciones adicionales después de unirse
+      await _engine.enableLocalVideo(true);
+      await _engine.enableLocalAudio(true);
+      
+      print('✅ Video y audio local habilitados');
         
     } catch (e) {
       print('❌ Error inicializando videollamada: $e');
@@ -139,20 +192,34 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
     _engine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          print('✅ ¡CONECTADO AL CANAL REAL! UID: ${connection.localUid}');
+          print('✅ ¡CONECTADO AL CANAL SIMPLE! UID: ${connection.localUid}');
           setState(() {
             _localUserJoined = true;
             _isJoined = true;
             _isConnecting = false;
           });
+          
+          // Forzar configuraciones después de conectarse
+          _configureAfterJoin();
+          
           _showSnackBar('Conectado - Esperando al otro usuario...');
         },
         
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
           print('🎉 ¡USUARIO REAL SE CONECTÓ! UID: $remoteUid');
+          print('  - Canal: ${connection.channelId}');
+          print('  - Mi UID: ${connection.localUid}');
+          print('  - Remote UID: $remoteUid');
+          
           setState(() {
             _remoteUid = remoteUid;
           });
+          
+          // Forzar actualización del video remoto
+          Future.delayed(const Duration(milliseconds: 500), () {
+            setState(() {});
+          });
+          
           _showSnackBar('¡${widget.receiverName} se unió a la llamada!');
         },
         
@@ -166,7 +233,17 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
         
         onRemoteVideoStateChanged: (RtcConnection connection, int uid, 
             RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
-          print('📹 Estado de video remoto cambió: $state para UID: $uid');
+          print('📹 Estado de video remoto cambió:');
+          print('  - UID: $uid');
+          print('  - Estado: $state');
+          print('  - Razón: $reason');
+          print('  - Canal: ${connection.channelId}');
+          
+          if (state == RemoteVideoState.remoteVideoStateStarting) {
+            print('✅ ¡Video remoto iniciando!');
+          } else if (state == RemoteVideoState.remoteVideoStateDecoding) {
+            print('✅ ¡Video remoto decodificando - deberías verlo ahora!');
+          }
         },
         
         onConnectionStateChanged: (RtcConnection connection, 
@@ -245,7 +322,13 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
   Future<void> _endCall() async {
     try {
       print('📞 Terminando llamada...');
+      
+      // Notificar en Firestore que la llamada terminó
+      await VideoCallService.endVideoCall(widget.callId);
+      
+      // Salir del canal de Agora
       await _engine.leaveChannel();
+      
       Navigator.pop(context);
     } catch (e) {
       print('Error end call: $e');
@@ -262,12 +345,38 @@ class _VideoCallRealScreenState extends State<VideoCallRealScreen> {
           height: double.infinity,
           color: Colors.black87,
           child: _remoteUid != null
-              ? AgoraVideoView(
-                  controller: VideoViewController.remote(
-                    rtcEngine: _engine,
-                    canvas: VideoCanvas(uid: _remoteUid!),
-                    connection: RtcConnection(channelId: widget.callId),
-                  ),
+              ? Stack(
+                  children: [
+                    // Video remoto
+                    AgoraVideoView(
+                      controller: VideoViewController.remote(
+                        rtcEngine: _engine,
+                        canvas: VideoCanvas(
+                          uid: _remoteUid!,
+                          renderMode: RenderModeType.renderModeHidden,
+                        ),
+                        connection: RtcConnection(
+                          channelId: 'testchannel', // Usar el mismo canal simple
+                        ),
+                      ),
+                    ),
+                    // Indicador de que el video está funcionando
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'UID: $_remoteUid',
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ),
+                    ),
+                  ],
                 )
               : _buildWaitingForUserView(),
         ),

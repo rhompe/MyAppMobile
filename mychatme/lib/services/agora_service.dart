@@ -7,7 +7,7 @@ class AgoraService {
   
   // IMPORTANTE: En producción, debes generar tokens dinámicamente desde tu servidor
   // Este es un token temporal que puede expirar
-  static const String tempToken = '007eJxTYLiu9fMY473pa6IrJ51w9TNyclZgPdJ5PK6xZKOL61EZRT4FBiPTRPNkM3MTQyMjAxNLY0PLxGSDJBOjlESTJEtTE8NUybKSjIZARoY4p5mMjAwQCOKzMRQUlaYmJTIwAAAIbh2i';
+  static const String tempToken = 'PEGA_TU_NUEVO_TOKEN_AQUI';
 
   /// Verifica si los permisos necesarios están concedidos
   static Future<bool> checkPermissions() async {

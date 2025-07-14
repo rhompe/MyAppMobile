@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:mychatme/screens/change_password_screen.dart';
 import 'package:mychatme/screens/contacts_screen.dart';
 import 'package:mychatme/screens/videocall_contacts_screen.dart';
+import 'package:mychatme/screens/videocall_real_screen.dart';
 import 'package:mychatme/l10n/app_localizations.dart';
+import '../services/videocall_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'device_contacts_screen.dart'; // Nueva pantalla para contactos de videollamada
+import 'device_contacts_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final String userName;
   final String userRole;
 
@@ -18,9 +21,120 @@ class HomeScreen extends StatelessWidget {
   });
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _listenForIncomingCalls();
+  }
+
+  /// Escuchar videollamadas entrantes
+  void _listenForIncomingCalls() {
+    VideoCallService.listenForIncomingCalls().listen((snapshot) {
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final callId = data['callId'] as String;
+        final callerName = data['callerName'] as String;
+        final callerId = data['callerId'] as String;
+        
+        print('📞 ¡Videollamada entrante de $callerName!');
+        
+        // Mostrar diálogo de videollamada entrante
+        _showIncomingCallDialog(callId, callerName, callerId);
+      }
+    });
+  }
+
+  /// Mostrar diálogo de videollamada entrante
+  void _showIncomingCallDialog(String callId, String callerName, String callerId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black87,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.video_call,
+              color: Colors.green,
+              size: 60,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Videollamada entrante',
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              callerName,
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Botón rechazar
+                GestureDetector(
+                  onTap: () async {
+                    await VideoCallService.rejectVideoCall(callId);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.call_end, color: Colors.white, size: 30),
+                  ),
+                ),
+                // Botón aceptar
+                GestureDetector(
+                  onTap: () async {
+                    await VideoCallService.acceptVideoCall(callId);
+                    Navigator.pop(context);
+                    
+                    // Ir a la pantalla de videollamada
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoCallRealScreen(
+                          callId: callId,
+                          receiverId: callerId,
+                          receiverName: callerName,
+                          isIncoming: true, // Es llamada entrante
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.videocam, color: Colors.white, size: 30),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    String roleText = userRole == 'admin' ? t.administrator : t.user;
+    String roleText = widget.userRole == 'admin' ? t.administrator : t.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +198,7 @@ class HomeScreen extends StatelessWidget {
                   radius: 24,
                   backgroundColor: Colors.purple,
                   child: Text(
-                    userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                    widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
                     style: const TextStyle(color: Colors.white, fontSize: 20),
                   ),
                 ),
@@ -93,7 +207,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      userName,
+                      widget.userName,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
